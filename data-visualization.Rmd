@@ -5,5 +5,181 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+my_packages <- c("tidyverse", "broom", "coefplot", "cowplot", 
+                 "gapminder", "GGally", "ggrepel", "ggridges", "gridExtra", 
+                 "here", "interplot", "margins", "maps", "mapproj", 
+                 "mapdata", "MASS", "quantreg", "rlang", "scales", "survey", 
+                 "srvyr", "viridis", "viridisLite", "devtools")
+
+install.packages(my_packages, repos = "https://cran.rstudio.com")
+devtools::install_github("kjhealy/socviz")
+install.packages("pacman")
+
 ```
 
+```{r libraries}
+
+library(pacman)
+pacman::p_load(tidyverse, socviz)
+
+
+```
+
+```{r aboutR}
+
+class(titanic)
+
+titanic$percent
+
+titanic_tb <- as_tibble(titanic)
+
+titanic_tb
+
+
+
+```
+
+```{r ch2.5}
+
+url <- "https://raw.githubusercontent.com/kjhealy/viz-organdata/master/organdonation.csv"
+
+#read_csv()は勝手に文字列をfactor型にしない！
+organs <- read_csv(file=url)
+
+organs %>% show()
+
+
+```
+
+```{r 2.6}
+
+library(gapminder)
+gapminder##国別の平均寿命や一人当たりのGDPなどを記録したデータ
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp))
+
+p + geom_point()
+
+
+```
+
+#### 3.1 ggplotはどうやって動くのか
+
+-   『プロットを作り始めるには、常に、まずggplot()関数を使ってどのデータを使うのか、データの中のどの変数をプロットの審美的要素として論理的にマッピングするのかを指定します。』
+
+```{r 3.3}
+
+### aestheticsはデータとプロット要素の接合点
+### geomはプロットのタイプ
+
+library(gapminder)
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp))
+
+p#この時点では空っぽのプロットができる
+
+## geom関数をレイヤーで重ねていく
+
+p + geom_point()
+
+
+
+```
+
+```{r 3.4}
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp))
+
+p + geom_smooth() +
+  geom_point()
+
+##`geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'は、一般化加法モデルを用いて平滑化曲線を作ったことを示している
+
+p <- ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp))
+
+p + geom_point() + geom_smooth(method = "lm")
+
+p + geom_point() + geom_smooth(method = "gam") + scale_x_log10()
+
+p + geom_point() + 
+  geom_smooth(method = "gam") + 
+  scale_x_log10(labels = scales::dollar)
+
+
+
+```
+
+```{r 3.5}
+
+# p <- ggplot(data = gapminder,
+#             mapping = aes(x = gdpPercap, y = lifeExp, color = continent))
+
+
+p <- ggplot(data = gapminder, 
+            mapping = aes(x = gdpPercap, y = lifeExp, color = "purple"))
+
+p + geom_point() + 
+  geom_smooth(method = "lm") + 
+  scale_x_log10()##このコードでは新たに"purple"という文字列からなる変数を作り出している（リサイクル規則によってベクトルが作られている）
+
+# aes()はマッピングのためだけに用いるべきで、あるプロパティを特定の値にするために用いてはいけない。それはgeom_関数の中で行うべき
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp))
+
+
+#こっちが正解
+p + geom_point(color = "purple") +
+  geom_smooth(method = "loess") + 
+  scale_x_log10()
+
+
+# figure 3.13
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp))
+
+p + geom_point(alpha = 0.3) + 
+  geom_smooth(method = "gam") + 
+  scale_x_log10(labels = scales::dollar) +
+  labs(x = "GDP Per Capita",
+       y = "Life Expecctancy in Years",
+       title = "Economic Growth and Life Expectancy",
+       subtitle = "Data points are country - years",
+       caption = "Source: Gapminder.") 
+
+
+## figure 3.15
+
+#信頼区間の色はfillで制御できる！
+
+p <-  ggplot(data = gapminder,
+             mapping = aes(x = gdpPercap, y = lifeExp, color = continent,
+                           fill = continent))
+
+p + geom_point() + 
+  geom_smooth(method = "loess") + 
+  scale_x_log10()
+
+
+```
+
+```{r　3.16}
+
+
+# pointだけcontinentごとに色分けしつつ、splineは全データに適用して一本の曲線にしたいとき
+# geom_ごとにmappingを特定する
+
+p <- ggplot(data = gapminder,
+            mapping = aes(x = gdpPercap, y = lifeExp)) 
+
+p + geom_point(mapping = aes(color = continent)) + 
+  geom_smooth(method = "loess") + 
+  scale_x_log10(labels = scales::dollar)
+
+
+
+```
